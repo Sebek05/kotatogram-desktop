@@ -136,7 +136,7 @@ jobs:
           git clone %GIT%/telegramdesktop/lzma.git
           cd lzma
           cd C\Util\LzmaLib
-          msbuild -m LzmaLib.sln /property:Configuration=Debug
+          msbuild -m LzmaLib.sln /property:Configuration=Release
 
       - name: OpenSSL cache.
         id: cache-openssl
@@ -180,7 +180,7 @@ jobs:
           cd zlib
           git checkout tdesktop
           cd contrib\vstudio\vc14
-          msbuild -m zlibstat.vcxproj /property:Configuration=Debug
+          msbuild -m zlibstat.vcxproj /property:Configuration=ReleaseWithoutAsm
 
       - name: OpenAL Soft cache.
         id: cache-openal
@@ -204,56 +204,7 @@ jobs:
           -D LIBTYPE:STRING=STATIC ^
           -D FORCE_STATIC_VCRT:STRING=ON ..
 
-          msbuild -m OpenAL.vcxproj /property:Configuration=Debug
-
-      - name: Breakpad cache.
-        id: cache-breakpad
-        uses: actions/cache@v1
-        with:
-          path: ${{ env.LibrariesPath }}/breakpad
-          key: ${{ runner.OS }}-breakpad-${{ env.CACHE_KEY }}-${{ hashFiles('**/breakpad.diff') }}
-      - name: Breakpad.
-        env:
-          GYP_MSVS_OVERRIDE_PATH: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\'
-          GYP_MSVS_VERSION: 2019
-        shell: cmd
-        if: steps.cache-breakpad.outputs.cache-hit != 'true'
-        run: |
-          cd %LibrariesPath%
-
-          echo Find any version of Python 2.
-          for /D %%a in (C:\hostedtoolcache\windows\Python\2.*) do (
-            SET PY2=%%a\x64
-          )
-          IF [%PY2%] == [] (
-            echo Python 2 is not found.
-            exit 1
-          )
-          echo Found %PY2%.
-
-          git clone %GIT%/telegramdesktop/gyp.git
-          cd gyp
-          SET PATH=%PY2%;%cd%;%PATH%
-          git checkout tdesktop
-
-          cd %LibrariesPath%
-
-          git clone %GIT%/google/breakpad
-          cd breakpad
-          git checkout a1dbcdcb43
-          git apply ../patches/breakpad.diff
-          cd src
-          git clone %GIT%/google/googletest testing
-          cd client\windows
-          call gyp --no-circular-check breakpad_client.gyp --format=ninja
-          cd ..\..
-          ninja -C out/Debug common crash_generation_client exception_handler
-          ninja -C out/Release common crash_generation_client exception_handler
-          cd tools\windows\dump_syms
-          call gyp dump_syms.gyp
-
-          call vcvars32.bat
-          msbuild -m dump_syms.vcxproj /property:Configuration=Release
+          msbuild -m OpenAL.vcxproj /property:Configuration=Release
 
       - name: Opus cache.
         id: cache-opus
@@ -271,7 +222,6 @@ jobs:
           cd opus
           git checkout tdesktop
           cd win32\VS2015
-          msbuild -m opus.sln /property:Configuration=Debug /property:Platform="Win32"
           msbuild -m opus.sln /property:Configuration=Release /property:Platform="Win32"
 
       - name: FFmpeg cache.
@@ -323,8 +273,7 @@ jobs:
 
           configure ^
           -prefix "%LibrariesPath%\Qt-5.12.8" ^
-          -debug ^
-          -force-debug-info ^
+          -release ^
           -opensource ^
           -confirm-license ^
           -static ^
@@ -373,13 +322,15 @@ jobs:
 
           cmake -B build . ^
           -GNinja ^
-          -DCMAKE_BUILD_TYPE=Debug ^
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
           -DCMAKE_C_COMPILER=cl ^
           -DCMAKE_CXX_COMPILER=cl ^
           -D TDESKTOP_API_TEST=ON ^
           -D DESKTOP_APP_USE_PACKAGED=OFF ^
           -D DESKTOP_APP_ENABLE_IPO_OPTIMIZATIONS=OFF ^
           %TDESKTOP_BUILD_DEFINE% ^
+          -DDESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
+          -DDESKTOP_APP_DISABLE_CRASH_REPORTS=ON ^
           -DCMAKE_SYSTEM_VERSION=%SDK%
 
           cmake --build build
