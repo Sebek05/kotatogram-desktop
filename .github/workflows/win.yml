@@ -317,22 +317,18 @@ jobs:
         shell: cmd
         timeout-minutes: 120
         run: |
-          cd %REPO_NAME%
-          call vcvars32.bat
-
-          cmake -B build . ^
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
-          -DCMAKE_C_COMPILER=cl ^
-          -DCMAKE_CXX_COMPILER=cl ^
+          cd %REPO_NAME%\Telegram
+          call configure.bat ^
           -D TDESKTOP_API_TEST=ON ^
           -D DESKTOP_APP_USE_PACKAGED=OFF ^
           -D DESKTOP_APP_ENABLE_IPO_OPTIMIZATIONS=OFF ^
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON ^
           %TDESKTOP_BUILD_DEFINE% ^
-          -DDESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
-          -DDESKTOP_APP_DISABLE_CRASH_REPORTS=ON ^
           -DCMAKE_SYSTEM_VERSION=%SDK%
-
-          cmake --build build
+          call vcvars32.bat
+          cd ..\out
+          msbuild Telegram.sln /nologo /p:Configuration=RelWithDebInfo,Platform=Win32
 
       - name: Re-run build on failure.
         if: failure()
@@ -348,7 +344,7 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         shell: cmd
         run: |
-          cd %REPO_NAME%\build\bin
+          cd %REPO_NAME%\out\RelWithDebInfo
           mkdir artifact
           move Kotatogram.exe artifact/
           move Updater.exe artifact/
@@ -357,4 +353,4 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.REPO_NAME }}\build\bin\artifact\
+          path: ${{ env.REPO_NAME }}\out\RelWithDebInfo\artifact\
