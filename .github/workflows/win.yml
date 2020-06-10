@@ -335,10 +335,10 @@ jobs:
         shell: cmd
         timeout-minutes: 30
         run: |
-          cd %REPO_NAME%
+          cd %REPO_NAME%\Telegram
           call vcvars32.bat
 
-          cmake --build build
+          msbuild -m Telegram.sln /nologo /p:Configuration=RelWithDebInfo,Platform=Win32
 
       - name: Move artifact.
         if: env.UPLOAD_ARTIFACT == 'true'
